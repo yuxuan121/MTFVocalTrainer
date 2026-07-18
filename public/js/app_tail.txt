@@ -1,0 +1,145 @@
+  renderSection7() {
+    this.selectedVoiceStyle = 'xiaoxiao';
+    this._renderStudioList();
+    this._updateStudioProgress();
+  }
+
+  _renderStudioList() {
+    const list = document.getElementById('studioSentenceList');
+    if (!list) return;
+    const sentences = this.voiceStudio.sentences;
+    list.innerHTML = sentences.map(s => {
+      const recorded = this.voiceStudio.hasRecording(s.id);
+      const converted = this.voiceStudio.recordings[s.id + '_converted'];
+      const statusIcon = converted ? '✅' : recorded ? '🎙️' : '⭕';
+      const statusColor = converted ? '#2ed573' : recorded ? '#ffa502' : '#555';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #2a2a3e;">
+        <span style="color:${statusColor};font-size:16px;width:24px;text-align:center;">${statusIcon}</span>
+        <span style="color:#a4b0be;font-size:11px;min-width:28px;">[${s.level}]</span>
+        <span style="color:#fff;font-size:13px;flex:1;">${s.text}</span>
+        <button class="btn btn-sm btn-outline" onclick="app._studioRecord('${s.id}')" 
+          style="font-size:11px;padding:4px 8px;${this.voiceStudio.isRecording ? 'opacity:0.5;pointer-events:none' : ''}">
+          ${recorded ? '🔁 重录' : '🎤 录制'}
+        </button>
+        ${recorded ? `<button class="btn btn-sm btn-outline" onclick="app._studioPlay('${s.id}')" style="font-size:11px;padding:4px 8px;">▶ 试听</button>` : ''}
+        ${converted ? `<button class="btn btn-sm btn-outline" onclick="app._studioPlayConv('${s.id}')" style="font-size:11px;padding:4px 8px;">👩 女声</button>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  async _studioRecord(sentenceId) {
+    if (this.voiceStudio.isRecording) {
+      await this.voiceStudio.stopRecording();
+      this._renderStudioList();
+      this._updateStudioProgress();
+      return;
+    }
+    const ok = await this.voiceStudio.startRecording(sentenceId);
+    if (ok) {
+      this._renderStudioList();
+      // Auto-stop after 5 seconds
+      setTimeout(async () => {
+        if (this.voiceStudio.isRecording) {
+          await this.voiceStudio.stopRecording();
+          this._renderStudioList();
+          this._updateStudioProgress();
+        }
+      }, 5000);
+    }
+  }
+
+  _studioPlay(sentenceId) {
+    const blob = this.voiceStudio.getRecording(sentenceId);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => URL.revokeObjectURL(url);
+    audio.play();
+  }
+
+  _studioPlayConv(sentenceId) {
+    this.voiceStudio.playConverted(sentenceId).catch(() => {
+      alert('转换后的音频未找到。请先导入女声文件。');
+    });
+  }
+
+  _updateStudioProgress() {
+    const p = this.voiceStudio.getProgress();
+    const bar = document.getElementById('studioProgressBar');
+    const text = document.getElementById('studioProgressText');
+    const exportBtn = document.getElementById('studioExportBtn');
+    if (bar) bar.style.width = p.pct + '%';
+    if (text) text.textContent = `${p.done}/${p.total}`;
+    if (exportBtn) exportBtn.disabled = p.done === 0;
+  }
+
+  selectVoiceStyle(style) {
+    this.selectedVoiceStyle = style;
+    const desc = document.getElementById('voiceStyleDesc');
+    const guide = document.getElementById('studioGuide');
+    const info = this.voiceStudio.styles[style];
+    if (desc) desc.textContent = info ? info.desc : '';
+    
+    if (style === 'xiaoxiao') {
+      // Using Edge TTS - no conversion needed
+      this.convCoach.setVoiceConfig({ voice: 'zh-CN-XiaoxiaoNeural', rate: 0.9, pitch: '+0Hz' });
+      if (guide) guide.style.display = 'block';
+      guide.querySelector('h4').textContent = '🤖 微软晓晓 — 即开即用';
+    } else {
+      // Custom voice style - requires RVC conversion
+      if (guide) {
+        guide.style.display = 'block';
+        guide.querySelector('h4').textContent = `🔄 ${info.name} — 需要RVC转换`;
+      }
+    }
+  }
+
+  exportStudioRecordings() {
+    const exports = this.voiceStudio.exportRecordings();
+    if (exports.length === 0) {
+      alert('还没有录制任何句子。请先录制。');
+      return;
+    }
+    // Download each recording
+    exports.forEach((exp) => {
+      const a = document.createElement('a');
+      a.href = exp.url;
+      a.download = `${exp.id}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  }
+
+  importStudioAudio() {
+    document.getElementById('studioImportInput').click();
+  }
+
+  handleStudioImport(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    let imported = 0;
+    Array.from(files).forEach(file => {
+      // Try to match file name to sentence id
+      const name = file.name.replace(/\.(mp3|wav|webm|ogg|m4a)$/i, '');
+      const sentence = this.voiceStudio.sentences.find(s => s.id === name);
+      if (sentence) {
+        this.voiceStudio.importAudio(sentence.id, file);
+        imported++;
+      }
+    });
+    
+    this.voiceStudio.saveConvertedReferences();
+    this._renderStudioList();
+    this._updateStudioProgress();
+    
+    alert(`已导入 ${imported} 个女声音频文件。\n\n回到 Section VI 对话教练，播放时会自动使用你导入的女声。`);
+  }
+}
+
+// Initialize app when DOM is loaded
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+  app = new VoiceTrainerApp();
+});

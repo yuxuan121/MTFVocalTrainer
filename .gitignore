@@ -1,0 +1,12 @@
+.gradle/
+*.apk
+node_modules/
+.DS_Store
+android/app/build/
+android/build/
+android/.gradle/
+package-lock.json
+public/js/doubao-config.js
+android/app/src/main/assets/js/doubao-config.js
+.vscode/
+.idea/

@@ -1,0 +1,37 @@
+{
+  "app_name": "创建一个AndroidWebView壳应用用于加载本地PWA嗓音训练项目App",
+  "package_name": "com.operit.androidwebviewpwaapp",
+  "project_dir": "/data/user/0/com.ai.assistance.operit/files/workspace/86b714f2-7e95-4719-8dc1-e0c22def28e6/mtf-vocal-trainer/android/创建一个AndroidWebView壳应用用于加载本地PWA嗓音训练项目App",
+  "requirement": "创建一个Android WebView壳应用，用于加载本地PWA嗓音训练项目。项目功能：一个全屏WebView加载本地HTML文件(index.html)，该HTML包含嗓音女性化训练的多个Section（音高、共鸣、歌单、AI对话教练、嗓音工作室等）。需要支持麦克风权限（WebRTC getUserMedia）。不需要任何原生UI，纯WebView全屏显示。包名：com.ai.voicefeminization.trainer。应用名：嗓音训练。",
+  "created_at": "2026-07-11T14:00:15.966Z",
+  "architecture": "MVVM",
+  "min_sdk": 24,
+  "target_sdk": 34,
+  "language": "Kotlin",
+  "build_system": "Gradle",
+  "template": "internal",
+  "ui_framework": "Jetpack Compose",
+  "dependencies": [
+    "androidx.core:core-ktx:1.12.0",
+    "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0",
+    "androidx.activity:activity-compose:1.8.2",
+    "androidx.compose.ui:ui:1.6.0",
+    "androidx.compose.material3:material3:1.2.0"
+  ],
+  "ui_layout": {
+    "main_screen": "Scaffold with TopAppBar",
+    "navigation": "Single Activity",
+    "theme": "Material3 Dynamic Color"
+  },
+  "file_plan": [
+    "settings.gradle.kts",
+    "build.gradle.kts",
+    "app/build.gradle.kts",
+    "app/src/main/AndroidManifest.xml",
+    "app/src/main/java/com/operit/androidwebviewpwaapp/MainActivity.kt",
+    "app/src/main/java/com/operit/androidwebviewpwaapp/ui/theme/Theme.kt",
+    "app/src/main/java/com/operit/androidwebviewpwaapp/ui/theme/Color.kt",
+    "app/src/main/res/values/strings.xml"
+  ],
+  "status": "planned"
+}

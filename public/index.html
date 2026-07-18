@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Voice feminization training app with pitch and resonance exercises">
+  <meta name="theme-color" content="#e94560">
+  <title>嗓音训练</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/icons/icon-192x192.png">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-content">
+      <h1 class="nav-title">🎙️ 嗓音训练</h1>
+      <div class="nav-stats">
+        <div class="stat-item">
+          <span class="stat-label">等级</span>
+          <span class="stat-value" id="navLevel">1</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">连续天数</span>
+          <span class="stat-value" id="navStreak">0🔥</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Home Screen -->
+    <div id="homeScreen" class="screen active">
+      <div class="welcome">
+        <h2>欢迎回来，Ellie！</h2>
+        <p class="subtitle">继续你的嗓音训练之旅吧</p>
+      </div>
+
+      <div class="progress-overview">
+        <canvas id="xpProgressCanvas" width="400" height="80"></canvas>
+        <canvas id="streakCalendarCanvas" width="400" height="200"></canvas>
+      </div>
+
+      <div class="sections-grid">
+        <div class="section-card" id="section1Card">
+          <div class="section-icon">🎯</div>
+          <h3>第一部分：音高锚定</h3>
+          <p>通过哼唱稳定命中目标音高</p>
+          <div class="section-progress" id="section1Progress"></div>
+          <button class="btn btn-primary" onclick="app.navigateTo('section1')">开始训练</button>
+        </div>
+
+        <div class="section-card locked" id="section2Card">
+          <div class="section-icon">🗣️</div>
+          <h3>第二部分：高级音高</h3>
+          <p>在说话中保持音高锚定</p>
+          <div class="section-progress" id="section2Progress"></div>
+          <button class="btn btn-secondary" onclick="app.navigateTo('section2')" disabled>已锁定</button>
+        </div>
+
+        <div class="section-card locked" id="section3Card">
+          <div class="section-icon">🔮</div>
+          <h3>第三部分：共鸣训练</h3>
+          <p>掌握喉部姿态与声音温暖感</p>
+          <div class="section-progress" id="section3Progress"></div>
+          <button class="btn btn-secondary" onclick="app.navigateTo('section3')" disabled>已锁定</button>
+        </div>
+
+        <div class="section-card locked" id="section4Card">
+          <div class="section-icon">📖</div>
+          <h3>第四部分：词语练习</h3>
+          <p>将全部技巧应用于日常说话</p>
+          <div class="section-progress" id="section4Progress"></div>
+          <button class="btn btn-secondary" onclick="app.navigateTo('section4')" disabled>已锁定</button>
+        </div>
+
+        <div class="section-card" id="section5Card">
+          <div class="section-icon">🎵</div>
+          <h3>第五部分：歌单分级训练</h3>
+          <p>Lv.1~Lv.5 渐进式歌曲跟唱</p>
+          <div class="section-progress" id="section5Progress">20首歌曲等你挑战</div>
+          <button class="btn btn-primary" onclick="app.navigateTo('section5')">开始训练</button>
+        </div>
+
+        <div class="section-card" id="section6Card">
+          <div class="section-icon">💬</div>
+          <h3>第六部分：AI对话教练</h3>
+          <p>AI女声朗读 → 你跟读 → 实时反馈</p>
+          <div class="section-progress" id="section6Progress">D1~D3 日常对话练习</div>
+          <button class="btn btn-primary" onclick="app.navigateTo('section6')">开始练习</button>
+        </div>
+
+        <div class="section-card" id="section7Card">
+          <div class="section-icon">🎙️</div>
+          <h3>第七部分：嗓音工作室</h3>
+          <p>录制你的声音 → 转成女声 → 替换教练</p>
+          <div class="section-progress" id="section7Progress">15句话待录制</div>
+          <button class="btn btn-primary" onclick="app.navigateTo('section7')">进入工作室</button>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <button class="btn btn-outline" onclick="app.navigateTo('achievements')">
+          🏆 成就
+        </button>
+        <button class="btn btn-outline" onclick="app.navigateTo('progress')">
+          📊 进度
+        </button>
+        <button class="btn btn-outline" onclick="app.navigateTo('settings')">
+          ⚙️ 设置
+        </button>
+      </div>
+    </div>
+
+    <!-- Section 1: Pitch Practice -->
+    <div id="section1Screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>第一部分：音高练习</h2>
+      </div>
+
+      <div class="exercise-container">
+        <div class="instructions">
+          <p><strong>练习模式：</strong> 持续哼唱，实时反馈，无时间限制。</p>
+          <p><strong>测试模式：</strong> 30秒评估，自动判定通过/未通过。音高须保持在150Hz以上。</p>
+          <p>目标音高: <strong id="targetNoteDisplay">E3 (164.81 Hz)</strong></p>
+        </div>
+
+        <div class="visual-feedback">
+          <div id="readyLight" class="ready-light"></div>
+          <div id="pitchModeIndicator" style="text-align: center; font-weight: bold; margin-bottom: 10px; display: none;"></div>
+          <canvas id="pitchMeterCanvas" width="400" height="150"></canvas>
+        </div>
+
+        <div class="live-stats">
+          <div class="stat-box">
+            <span class="stat-label">当前音高</span>
+            <span class="stat-value large" id="currentPitch">-- Hz</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">准确度</span>
+            <span class="stat-value" id="pitchAccuracy">--</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">稳定性</span>
+            <span class="stat-value" id="pitchStability">-- Hz</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">得分</span>
+            <span class="stat-value highlight-primary" id="pitchScore">0</span>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="startPitchPracticeBtn" class="btn btn-outline btn-lg" onclick="app.startPitchPractice()" style="margin-right: 10px;">
+            练习模式
+          </button>
+          <button id="startPitchTestBtn" class="btn btn-primary btn-lg" onclick="app.startPitchExercise()">
+            测试模式
+          </button>
+          <button id="stopPitchPracticeBtn" class="btn btn-danger btn-lg" onclick="app.stopPitchPractice()" style="display: none;">
+            停止练习
+          </button>
+        </div>
+
+        <div id="pitchResultsSection" class="results" style="display: none;">
+          <h3>练习结果</h3>
+          <div id="pitchResultsContent"></div>
+          <button class="btn btn-primary" onclick="app.startPitchExercise()">再来一次</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Advanced Pitch Practice -->
+    <div id="section2Screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>第二部分：高级音高锚定</h2>
+      </div>
+
+      <div class="exercise-container">
+        <div class="instructions">
+          <p><strong>目标：</strong> 在完整句子中保持音高锚定（165Hz），克服辅音和元音带来的音高下降。</p>
+          <p><strong>练习模式：</strong> 逐句练习，实时反馈。</p>
+          <p><strong>测试模式：</strong> 依次完成全部句子，每句旋律稳定性需 &lt;15 Hz。</p>
+        </div>
+
+        <div class="tier-indicator" id="tierIndicator" style="text-align: center; margin: 20px 0;">
+          <h3>第一级：高元音锚定</h3>
+          <p>最简单 — 用明亮的 'ee' 和 'ay' 音练习</p>
+        </div>
+
+        <div class="sentence-display" style="background: #1e1e2e; border-radius: 10px; padding: 20px; margin: 20px 0;">
+          <h3 style="text-align: center; color: #00d9ff; margin-bottom: 10px;">朗读这句话：</h3>
+          <div id="currentSentence" style="font-size: 24px; font-weight: bold; text-align: center; color: #fff; margin: 20px 0;">
+            "My dearest friend, say hi to me."
+          </div>
+        </div>
+
+        <div class="visual-feedback">
+          <div id="sentenceModeIndicator" style="text-align: center; font-weight: bold; margin-bottom: 10px; display: none;"></div>
+          <canvas id="sentencePitchMeterCanvas" width="400" height="150"></canvas>
+        </div>
+
+        <div class="live-stats">
+          <div class="stat-box">
+            <span class="stat-label">当前音高</span>
+            <span class="stat-value large" id="sentenceCurrentPitch">-- Hz</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">旋律稳定性</span>
+            <span class="stat-value" id="sentenceMelodicStability">-- Hz</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">状态</span>
+            <span class="stat-value" id="sentenceStatus">就绪</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">进度</span>
+            <span class="stat-value highlight-primary" id="sentenceProgress">0/6</span>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="startSentencePracticeBtn" class="btn btn-outline btn-lg" onclick="app.startSentencePractice()" style="margin-right: 10px;">
+            练习模式
+          </button>
+          <button id="startSentenceTestBtn" class="btn btn-primary btn-lg" onclick="app.startSentenceTest()">
+            测试模式
+          </button>
+          <button id="stopSentencePracticeBtn" class="btn btn-danger btn-lg" onclick="app.stopSentencePractice()" style="display: none;">
+            停止练习
+          </button>
+          <button id="nextSentenceBtn" class="btn btn-outline btn-lg" onclick="app.nextSentence()" style="display: none;">
+            下一句
+          </button>
+        </div>
+
+        <div id="sentenceResultsSection" class="results" style="display: none;">
+          <h3 id="sentenceResultTitle">结果</h3>
+          <div id="sentenceResultsContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Resonance Training -->
+    <div id="section3Screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>第三部分：共鸣训练</h2>
+      </div>
+
+      <div class="exercise-container">
+        <div class="instructions">
+          <p><strong>练习模式:</strong> Hum continuously while engaging the "Silent K" posture. Real-time feedback, no disqualifications.</p>
+          <p><strong>测试模式:</strong> 30-second evaluation with automatic pass/fail. Stability must stay below 15%.</p>
+          <p>Focus on achieving and maintaining stable formant frequencies.</p>
+        </div>
+
+        <div class="visual-feedback">
+          <div id="resonanceModeIndicator" style="text-align: center; font-weight: bold; margin-bottom: 10px; display: none;"></div>
+          <canvas id="resonanceMeterCanvas" width="400" height="200"></canvas>
+          <canvas id="resonanceHeatmapCanvas" width="400" height="280" style="margin-top: 10px;"></canvas>
+          <div style="text-align: center; font-size: 11px; color: #a4b0be; margin-top: 4px;">
+            🔴 红框=男性共鸣区 &nbsp; 🟢 绿框=女性共鸣区 &nbsp; 🟡 金点=你的当前位置
+          </div>
+        </div>
+
+        <div class="live-stats">
+          <div class="stat-box">
+            <span class="stat-label">F1（第一共振峰）</span>
+            <span class="stat-value" id="f1Display">-- Hz</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">F2（第二共振峰）</span>
+            <span class="stat-value" id="f2Display">-- Hz</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">亮度比</span>
+            <span class="stat-value" id="brightnessDisplay">--</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">稳定度</span>
+            <span class="stat-value highlight-success" id="resonanceStability">-- %</span>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="startResonancePracticeBtn" class="btn btn-outline btn-lg" onclick="app.startResonancePractice()" style="margin-right: 10px;">
+            练习模式
+          </button>
+          <button id="startResonanceTestBtn" class="btn btn-primary btn-lg" onclick="app.startResonanceExercise()">
+            测试模式
+          </button>
+          <button id="stopResonancePracticeBtn" class="btn btn-danger btn-lg" onclick="app.stopResonancePractice()" style="display: none;">
+            停止练习
+          </button>
+        </div>
+
+        <div id="resonanceResultsSection" class="results" style="display: none;">
+          <h3>Session 结果s</h3>
+          <div id="resonanceResultsContent"></div>
+          <button class="btn btn-primary" onclick="app.startResonanceExercise()">再来一次</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Word Practice -->
+    <div id="section4Screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>第四部分：词语练习</h2>
+      </div>
+
+      <div class="exercise-container">
+        <div class="level-selector">
+          <button class="level-btn active" data-level="vowels" onclick="app.selectWordLevel('vowels')">Vowels</button>
+          <button class="level-btn" data-level="words" onclick="app.selectWordLevel('words')">Words</button>
+          <button class="level-btn" data-level="phrases" onclick="app.selectWordLevel('phrases')">Phrases</button>
+        </div>
+
+        <div class="word-display">
+          <h3>朗读： <span id="currentWord" class="word-text">--</span></h3>
+        </div>
+
+        <div class="visual-feedback">
+          <canvas id="wordMeterCanvas" width="400" height="150"></canvas>
+        </div>
+
+        <div class="live-stats">
+          <div class="stat-box">
+            <span class="stat-label">音高波动</span>
+            <span class="stat-value" id="wordPitchStability">-- Hz</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">共鸣波动</span>
+            <span class="stat-value" id="wordResonanceStability">-- %</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">得分</span>
+            <span class="stat-value highlight-primary" id="wordScore">0</span>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="startWordBtn" class="btn btn-primary btn-lg" onclick="app.startWordExercise()">
+            开始录音
+          </button>
+          <button id="stopWordBtn" class="btn btn-danger btn-lg" onclick="app.stopWordExercise()" style="display: none;">
+            停止
+          </button>
+        </div>
+
+        <div id="wordResultsSection" class="results" style="display: none;">
+          <h3 id="wordResultTitle">结果</h3>
+          <div id="wordResultsContent"></div>
+          <button class="btn btn-primary" onclick="app.nextWord()">下一个词</button>
+        </div>
+
+        <div class="word-progress">
+          <h4>已完成：</h4>
+          <div id="completedWords" class="word-chips"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Song Graded Training -->
+    <div id="section5Screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>🎵 第五部分：歌单分级训练</h2>
+      </div>
+      <div class="exercise-container">
+        <div class="level-tabs" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;">
+          <button class="level-tab active" data-lv="1" onclick="app.selectSongLevel(1)">Lv.1 男低</button>
+          <button class="level-tab" data-lv="2" onclick="app.selectSongLevel(2)">Lv.2 男中</button>
+          <button class="level-tab" data-lv="3" onclick="app.selectSongLevel(3)">Lv.3 男高</button>
+          <button class="level-tab" data-lv="4" onclick="app.selectSongLevel(4)">Lv.4 中性</button>
+          <button class="level-tab" data-lv="5" onclick="app.selectSongLevel(5)">Lv.5 女声</button>
+        </div>
+        <div class="level-indicator" id="songLevelInfo" style="text-align:center;margin-bottom:16px;"></div>
+        <div class="song-grid" id="songGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;"></div>
+        <div id="songLyricsBox" style="display:none;margin-bottom:12px;max-height:180px;overflow-y:auto;background:#0f0f1e;border-radius:12px;padding:8px;border:1px solid rgba(255,255,255,0.1);-webkit-overflow-scrolling:touch;touch-action:pan-y;">
+          <div style="color:#a4b0be;text-align:center;padding:30px;">🎵 点击歌曲加载歌词...</div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;">
+          <button id="songPreviewBtn" class="btn btn-outline" onclick="app.playSongPreview()" style="display:none;font-size:13px;">🔊 试听原唱</button>
+          <button id="songPreviewStopBtn" class="btn btn-outline" onclick="app.stopSongPreview()" style="display:none;font-size:13px;">⏹ 停止</button>
+        </div>
+        <div class="controls">
+          <button id="startSongBtn" class="btn btn-primary btn-lg" onclick="app.startSongTraining()" style="font-size:18px;">🎤 开始 K 歌</button>
+          <button id="stopSongBtn" class="btn btn-danger btn-lg" onclick="app.stopSongTraining()" style="display:none;">⏹ 停止</button>
+        </div>
+        <div id="songResultsSection" class="results" style="display:none;">
+          <h3>🎯 本轮成绩</h3>
+          <div id="songResultsContent"></div>
+          <button class="btn btn-primary" onclick="app.startSongTraining()">再唱一次</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: AI Conversation Coach -->
+    <div id="section6Screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>💬 第六部分： AI对话教练</h2>
+      </div>
+
+      <div class="exercise-container">
+        <div class="instructions">
+          <p><strong>流程：</strong> AI用女声朗读一句 → 你用同样音高跟读 → 实时看到匹配度</p>
+        </div>
+
+        <div class="conv-level-tabs" style="display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="level-tab active" data-lv="1" onclick="app.selectConvMode('d1')">D1 入门</button>
+          <button class="level-tab" data-lv="2" onclick="app.selectConvMode('d2')">D2 进阶</button>
+          <button class="level-tab" data-lv="3" onclick="app.selectConvMode('d3')">D3 高阶</button>
+          <button class="level-tab" data-lv="free" onclick="app.selectConvMode('free')" style="background:rgba(0,217,255,0.15);border-color:#00d9ff;">🎙️ 自由对话</button>
+        </div>
+
+        <div class="conv-display" style="background:#1e1e2e;border-radius:12px;padding:20px;margin-bottom:16px;text-align:center;">
+          <div style="color:#a4b0be;font-size:12px;margin-bottom:8px;">👩 AI 说：</div>
+          <div id="convAIText" style="font-size:22px;font-weight:bold;color:#fff;margin-bottom:16px;">--</div>
+          <button id="convPlayBtn" class="btn btn-outline" onclick="app.playConvAudio()" style="margin-bottom:8px;">🔊 播放女声</button>
+          <div id="convHint" style="color:#00d9ff;font-size:12px;margin-bottom:12px;"></div>
+          <div style="color:#a4b0be;font-size:12px;margin-bottom:4px;">🗣️ 你跟读：</div>
+          <div id="convReplyHint" style="color:#ffa502;font-size:13px;">--</div>
+        </div>
+
+        <div class="visual-feedback">
+          <canvas id="convPitchCanvas" width="400" height="150"></canvas>
+          <div id="convLiveHint" style="text-align:center;font-size:16px;min-height:24px;margin-top:6px;"></div>
+        </div>
+
+        <div class="live-stats">
+          <div class="stat-box">
+            <span class="stat-label">当前音高</span>
+            <span class="stat-value large" id="convCurrentPitch">-- Hz</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">匹配度</span>
+            <span class="stat-value highlight-primary" id="convMatchPct">0%</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">状态</span>
+            <span class="stat-value" id="convStatus">就绪</span>
+          </div>
+        </div>
+
+        <div class="controls" style="flex-wrap:wrap;">
+          <button id="startConvBtn" class="btn btn-primary btn-lg" onclick="app.startConvTraining()">🎤 开始跟读</button>
+          <button id="stopConvBtn" class="btn btn-danger btn-lg" onclick="app.stopConvTraining()" style="display:none;">⏹ 停止</button>
+          <button id="nextConvBtn" class="btn btn-outline btn-lg" onclick="app.nextConvDialog()" style="display:none;">下一句 →</button>
+        </div>
+
+        <div id="convResultsSection" class="results" style="display:none;">
+          <h3>📊 本轮结果</h3>
+          <div id="convResultsContent"></div>
+          <button class="btn btn-primary" onclick="app.startConvTraining()">再练一次</button>
+        </div>
+
+        <!-- 自由对话/AI聊天模式 -->
+        <div id="convFreeArea" style="display:none;">
+          <div class="instructions" style="margin-bottom:8px;">
+            <p><strong>💬 AI 聊天教练：</strong> 像和好朋友聊天一样，打字说话都行。<br>音高曲线在顶部实时显示，AI 会在聊天中自然地帮你练习嗓音。</p>
+          </div>
+
+          <!-- 音高曲线（小尺寸） -->
+          <div style="background:#0a0a1a;border-radius:10px;padding:6px 10px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+              <span style="color:#a4b0be;font-size:11px;">🎤 实时音高</span>
+              <span id="chatPitchLabel" style="color:#00d9ff;font-size:13px;font-weight:bold;">-- Hz</span>
+            </div>
+            <canvas id="chatPitchCanvas" width="400" height="60" style="width:100%;border-radius:6px;background:#050510;"></canvas>
+          </div>
+
+          <!-- 聊天气泡 -->
+          <div id="chatBubbles" style="height:320px;overflow-y:auto;background:#0f0f1e;border-radius:12px;padding:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px;">
+            <div style="text-align:center;color:#666;font-size:13px;padding:40px 0;">
+              🤖 点下方「开始聊天」，和豆包教练聊起来吧
+            </div>
+          </div>
+
+          <!-- 输入区 -->
+          <div id="chatInputArea" style="display:none;">
+            <div style="display:flex;gap:8px;">
+              <input id="chatInput" type="text" placeholder="输入消息..." 
+                     style="flex:1;padding:10px 14px;border-radius:20px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;"
+                     onkeydown="if(event.key==='Enter')app.sendChatMsg()">
+              <button id="chatSendBtn" class="btn btn-primary" onclick="app.sendChatMsg()" style="border-radius:20px;padding:8px 20px;font-size:14px;">
+                ➤
+              </button>
+            </div>
+            <div style="text-align:center;margin-top:6px;">
+              <span id="chatOnlineBadge" style="font-size:10px;color:#666;">离线模式</span>
+            </div>
+          </div>
+
+          <!-- 按钮 -->
+          <div class="controls" style="margin-top:8px;">
+            <button id="startFreeChatBtn" class="btn btn-primary btn-lg" onclick="app.startFreeChat()">💬 开始聊天</button>
+            <button id="stopFreeChatBtn" class="btn btn-danger btn-lg" onclick="app.stopFreeChat()" style="display:none;">⏹ 结束聊天</button>
+          </div>
+          <div id="freeChatStats" style="margin-top:8px;text-align:center;color:#a4b0be;font-size:12px;"></div>
+
+          <!-- Key 配置（收起到折叠） -->
+          <details style="margin-top:8px;">
+            <summary style="color:#666;font-size:11px;cursor:pointer;">⚙️ API 配置</summary>
+            <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+              <input id="doubaoKeyInput" type="password" placeholder="豆包API Key" 
+                     style="flex:1;max-width:240px;padding:5px 8px;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#ccc;font-size:11px;">
+              <button class="btn btn-sm" onclick="app.setDoubaoKey()" style="font-size:11px;padding:4px 10px;">💾</button>
+              <span id="doubaoStatus" style="font-size:10px;color:#666;"></span>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 7: Voice Studio -->
+    <div id="section7Screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>🎙️ 第七部分： 嗓音工作室</h2>
+      </div>
+
+      <div class="exercise-container">
+        <div class="instructions" style="margin-bottom:12px;">
+          <p><strong>目标：</strong>用你自己的声音录制15句教练对话 → 在线转成女声 → 导入替换AI教练声音</p>
+        </div>
+
+        <!-- Voice Style Selector -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;">
+          <select id="voiceStyleSelect" onchange="app.selectVoiceStyle(this.value)" style="background:#1e1e2e;color:#fff;border:1px solid #333;padding:8px 12px;border-radius:8px;font-size:13px;">
+            <option value="yujie">💼 温柔御姐</option>
+            <option value="luoli">🌸 元气少女</option>
+            <option value="wenrou">🌙 知性温柔</option>
+            <option value="huopo">⭐ 活泼俏皮</option>
+            <option value="xiaoxiao" selected>🤖 微软晓晓 (默认)</option>
+          </select>
+          <span id="voiceStyleDesc" style="color:#a4b0be;font-size:12px;align-self:center;">无需转换，直接用Edge TTS</span>
+        </div>
+
+        <!-- 进度 Bar -->
+        <div style="background:#2a2a3e;border-radius:8px;height:8px;margin-bottom:16px;">
+          <div id="studioProgressBar" style="background:linear-gradient(90deg,#16c79a,#00d9ff);height:100%;border-radius:8px;width:0%;transition:width0.3s;"></div>
+        </div>
+        <div style="text-align:center;font-size:13px;color:#a4b0be;margin-bottom:12px;">
+          📋 录制进度：<span id="studioProgressText" style="color:#00d9ff;">0/15</span>
+        </div>
+
+        <!-- Sentence List -->
+        <div id="studioSentenceList" style="max-height:400px;overflow-y:auto;margin-bottom:12px;"></div>
+
+        <!-- Action Buttons -->
+        <div class="controls" style="flex-wrap:wrap;">
+          <button id="studioExportBtn" class="btn btn-outline" onclick="app.exportStudioRecordings()" disabled>📥 导出录音</button>
+          <button class="btn btn-outline" onclick="app.importStudioAudio()">📤 导入女声</button>
+          <input type="file" id="studioImportInput" accept="audio/*" multiple style="display:none;" onchange="app.handleStudioImport(event)">
+        </div>
+
+        <!-- Voice Style Guide -->
+        <div id="studioGuide" style="background:#1e1e2e;border-radius:12px;padding:16px;margin-top:12px;font-size:13px;line-height:1.6;">
+          <h4 style="margin-bottom:8px;">🔄 如何把录音转成女声？</h4>
+          <p style="color:#a4b0be;">
+            1️⃣ 把15句录完 → 点「导出录音」下载<br>
+            2️⃣ 去 <a href="https://huggingface.co/spaces" target="_blank" style="color:#00d9ff;">HuggingFace Spaces</a> 搜索 "RVC voice conversion"<br>
+            3️⃣ 上传你的录音 + 选一个女声模型 → 转换 → 下载<br>
+            4️⃣ 回到本页面 → 点「导入女声」上传转换后的文件<br>
+            <br>
+            💡 <strong>选「微软晓晓」则跳过以上步骤</strong>，直接用 Edge TTS 免费女声——零操作，即开即用。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 成就 Screen -->
+    <div id="achievementsScreen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>成就</h2>
+      </div>
+
+      <div class="achievements-container" id="achievementsList"></div>
+    </div>
+
+    <!-- 进度 Screen -->
+    <div id="progressScreen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>进度</h2>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-dashboard" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+          <div style="background:var(--color-surface);border-radius:12px;padding:1rem;text-align:center;">
+            <canvas id="femGaugeCanvas" width="220" height="180"></canvas>
+          </div>
+          <div style="background:var(--color-surface);border-radius:12px;padding:1rem;">
+            <h3 style="text-align:center;margin-bottom:8px;">📊 今日统计</h3>
+            <div id="dailyStatsContent" style="font-size:13px;line-height:2;"></div>
+          </div>
+        </div>
+
+        <h3>🎯 嗓音女性化进程</h3>
+        <canvas id="femJourneyCanvas" width="400" height="300"></canvas>
+
+        <h3 style="margin-top:1.5rem;">音高历史</h3>
+        <canvas id="pitchHistoryCanvas" width="400" height="200"></canvas>
+
+        <h3>共鸣历史</h3>
+        <canvas id="resonanceHistoryCanvas" width="400" height="200"></canvas>
+
+        <h3>统计</h3>
+        <div class="stats-grid" id="statsGrid"></div>
+      </div>
+    </div>
+
+    <!-- 设置 Screen -->
+    <div id="settingsScreen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>设置</h2>
+      </div>
+
+      <div class="settings-container">
+        <div class="setting-group">
+          <h3>目标音高</h3>
+          <div class="setting-item">
+            <label for="noteSelect">音高：</label>
+            <select id="noteSelect" onchange="app.updateTargetNote()">
+              <option value="C3">C3 (130.81 Hz)</option>
+              <option value="C#3">C#3 (138.59 Hz)</option>
+              <option value="D3">D3 (146.83 Hz)</option>
+              <option value="D#3">D#3 (155.56 Hz)</option>
+              <option value="E3" selected>E3 (164.81 Hz)</option>
+              <option value="F3">F3 (174.61 Hz)</option>
+              <option value="F#3">F#3 (185.00 Hz)</option>
+              <option value="G3">G3 (196.00 Hz)</option>
+              <option value="G#3">G#3 (207.65 Hz)</option>
+              <option value="A3">A3 (220.00 Hz)</option>
+              <option value="A#3">A#3 (233.08 Hz)</option>
+              <option value="B3">B3 (246.94 Hz)</option>
+              <option value="C4">C4 (261.63 Hz)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h3>外观</h3>
+          <div class="setting-item">
+            <label for="darkModeToggle">深色模式：</label>
+            <input type="checkbox" id="darkModeToggle" checked onchange="app.toggleDarkMode()">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h3>通知</h3>
+          <div class="setting-item">
+            <label for="notificationsToggle">每日提醒：</label>
+            <input type="checkbox" id="notificationsToggle" checked onchange="app.toggleNotifications()">
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h3>数据</h3>
+          <button class="btn btn-outline" onclick="app.exportData()">导出数据</button>
+          <button class="btn btn-outline" onclick="app.importData()">导入数据</button>
+          <button class="btn btn-danger" onclick="app.reset进度()">重置进度</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- ====== 全屏 K 歌模式 ====== -->
+  <div id="karaokeOverlay" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:#000;flex-direction:column;">
+    <div id="karaokeTopBar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:rgba(0,0,0,0.9);min-height:44px;">
+      <button id="karaokeBackBtn" class="btn btn-outline" onclick="app.stopSongTraining()" style="font-size:12px;padding:4px 12px;">✕ 退出</button>
+      <div style="text-align:center;flex:1;">
+        <div id="karaokeSongTitle" style="font-size:14px;font-weight:bold;color:#fff;">--</div>
+        <div id="karaokeArtist" style="font-size:11px;color:#a4b0be;">--</div>
+      </div>
+      <div style="text-align:right;">
+        <div id="karaokeScore" style="font-size:22px;font-weight:bold;color:#ffd700;">0</div>
+        <div id="karaokeCombo" style="font-size:11px;color:#16c79a;"></div>
+      </div>
+    </div>
+    <div id="karaokeCanvasWrap" style="flex:1;position:relative;min-height:0;">
+      <canvas id="karaokePitchCanvas" style="width:100%;height:100%;display:block;"></canvas>
+      <div id="karaokeFxLayer" style="position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;"></div>
+    </div>
+    <div id="karaokeStatsBar" style="display:flex;justify-content:space-around;padding:6px 12px;background:rgba(0,0,0,0.85);font-size:11px;color:#a4b0be;">
+      <span>完美 <b id="ksPerfect" style="color:#ffd700;">0</b></span>
+      <span>优秀 <b id="ksGood" style="color:#16c79a;">0</b></span>
+      <span>失误 <b id="ksMiss" style="color:#ff4757;">0</b></span>
+      <span id="ksTimer" style="color:#fff;">00:00</span>
+    </div>
+    <div id="karaokeLyricsWrap" style="height:140px;overflow-y:auto;background:rgba(10,10,26,0.95);padding:12px 16px;border-top:1px solid rgba(255,255,255,0.1);-webkit-overflow-scrolling:touch;touch-action:pan-y;">
+      <div id="karaokeLyrics" style="text-align:center;color:#666;font-size:15px;line-height:2.2;"></div>
+    </div>
+    <div id="karaokeControls" style="display:flex;gap:10px;justify-content:center;padding:10px;background:rgba(0,0,0,0.95);">
+      <button id="karaokePauseBtn" class="btn btn-outline" onclick="app.toggleKaraokePause()" style="font-size:13px;padding:6px 16px;">⏯ 暂停</button>
+      <button id="karaokeBeatToggle" class="btn btn-outline" onclick="app.toggleKaraokeBeat()" style="font-size:13px;padding:6px 16px;">🥁 节拍: 开</button>
+      <button id="karaokeGuideToggle" class="btn btn-outline" onclick="app.toggleKaraokeGuide()" style="font-size:13px;padding:6px 16px;">🔔 导唱: 开</button>
+    </div>
+  </div>
+
+<!-- Achievement Notification -->
+  <div id="achievementNotification" class="achievement-notification">
+    <div class="achievement-content">
+      <div class="achievement-icon" id="achievementIcon"></div>
+      <div class="achievement-text">
+        <h4 id="achievementTitle"></h4>
+        <p id="achievementDescription"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/storage.js"></script>
+  <script src="js/gamification.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/pitch-detector.js"></script>
+  <script src="js/formant-analyzer.js"></script>
+  <script src="js/charts.js"></script>
+  <!-- Using built-in YIN algorithm instead of external library -->
+  <script src="lib/formantanalyzer.min.js"></script>
+  <script src="js/song-trainer.js"></script>
+  <script src="js/ai-coach.js"></script>
+  <script src="js/conversation-coach.js"></script>
+  <script src="js/voice-studio.js"></script>
+  <script src="js/lrc-player.js"></script>
+  <script src="js/karaoke-engine.js"></script>
+  <script src="js/live-pitch.js"></script>
+  <script src="js/coach-strategy.js"></script>
+  <script src="js/doubao-config.js"></script>
+  <script src="js/doubao-api.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    // Catch ALL JS errors and display them visibly
+    var _errors = [];
+    window.onerror = function(msg, url, line, col, err) {
+      _errors.push(msg + ' at line ' + line);
+      var el = document.getElementById('_errbox') || document.createElement('div');
+      el.id = '_errbox';
+      el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#ff4757;color:#fff;padding:12px;font-size:12px;z-index:99999;max-height:40vh;overflow:auto;';
+      el.innerHTML = '<b>❌ JS ERROR:</b><br>' + _errors.join('<br>');
+      if (!document.getElementById('_errbox')) document.body.appendChild(el);
+      return false;
+    };
+    
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(registration => console.log('SW registered'))
+          .catch(error => console.log('SW registration failed:', error));
+      });
+    }
+
+    // Debug: check if app initialized
+    window.addEventListener('load', () => {
+      if (typeof app !== 'undefined' && app) {
+        console.log('✅ App initialized, navigateTo:', typeof app.navigateTo);
+      } else {
+        document.body.innerHTML = '<div style="color:red;font-size:24px;padding:40px;text-align:center;">❌ App 初始化失败！请检查浏览器控制台 (F12)</div>' + document.body.innerHTML;
+      }
+    });
+  </script>
+</body>
+</html>

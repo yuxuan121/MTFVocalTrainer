@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:acousticgender.space)",
+      "WebFetch(domain:github.com)",
+      "Bash(node:*)",
+      "Bash(npm install)",
+      "Bash(Copy-Item:*)",
+      "Bash(npm run dev:*)",
+      "Bash(tree:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd debugging for pitch detection issues\n\n- Add better error handling in pitch detector\n- Add console logging to track audio callbacks\n- Add try-catch for Pitchfinder initialization\n- Log pitch detection results for first 5 callbacks\n- Log when target is hit\n\nThis will help diagnose why pitch isn''t updating in real-time.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix pitch detection with improved autocorrelation\n\n- Switch to unpkg CDN for Pitchfinder (better compatibility)\n- Completely rewrite autocorrelation algorithm:\n  - Use proper normalized autocorrelation\n  - Add peak detection to avoid octave errors\n  - Add parabolic interpolation for accuracy\n  - Limit search to human voice range (80-1000Hz)\n  - Lower RMS threshold for better sensitivity\n- Should now continuously update pitch display\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

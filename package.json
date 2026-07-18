@@ -1,0 +1,29 @@
+{
+  "name": "voice-feminization-pwa",
+  "version": "1.0.0",
+  "description": "A PWA for voice feminization training with pitch and resonance exercises",
+  "main": "public/index.html",
+  "scripts": {
+    "setup": "node setup.js",
+    "postinstall": "node setup.js",
+    "dev": "npx serve public",
+    "build": "echo 'Static site - no build needed'",
+    "start": "npx serve public"
+  },
+  "keywords": [
+    "voice-training",
+    "pwa",
+    "voice-feminization",
+    "pitch-detection",
+    "formant-analysis"
+  ],
+  "author": "Ellie",
+  "license": "MIT",
+  "dependencies": {
+    "formantanalyzer": "^1.1.8",
+    "pitchfinder": "^2.3.0"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
