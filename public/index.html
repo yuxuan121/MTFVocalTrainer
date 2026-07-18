@@ -271,6 +271,19 @@
           <div style="text-align: center; font-size: 11px; color: #a4b0be; margin-top: 4px;">
             🔴 红框=男性共鸣区 &nbsp; 🟢 绿框=女性共鸣区 &nbsp; 🟡 金点=你的当前位置
           </div>
+          
+          <!-- 🔥 新增：共鸣比分析 -->
+          <div class="resonance-ratio-section" style="margin-top: 16px; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px;">
+            <h4 style="text-align: center; margin: 0 0 8px 0; color: #00d9ff; font-size: 13px;">🎯 共鸣比分析 ¾腔 vs 头腔</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <canvas id="resonanceRatioGaugeCanvas" width="200" height="180" style="flex: 1; min-width: 180px;"></canvas>
+              <canvas id="resonanceRatioTrendCanvas" width="200" height="180" style="flex: 1; min-width: 180px;"></canvas>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 8px; font-size: 13px;">
+              <span>头腔占比: <strong id="resonanceRatioDisplay" style="color: #16c79a; font-size: 18px;">--</strong></span>
+              <span id="resonanceRatioLabel" style="font-weight: bold;">等待声音...</span>
+            </div>
+          </div>
         </div>
 
         <div class="live-stats">

@@ -641,5 +641,191 @@ class Charts {
   }
 }
 
+  /**
+   * 共鸣比例仪表盘 — 胸腔 vs 头腔共鸣能量比
+   * @param {Object} ratioData - { ratio (0-1), chestPct, headPct, headDominant }
+   */
+  drawResonanceRatioGauge(canvas, ratioData) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    
+    ctx.clearRect(0, 0, W, H);
+    
+    if (!ratioData || ratioData.ratio == null) {
+      ctx.fillStyle = '#a4b0be';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('等待音频输入...', W / 2, H / 2);
+      return;
+    }
+    
+    const cx = W / 2;
+    const cy = H / 2 + 5;
+    const radius = Math.min(cx, cy) - 20;
+    const ratio = Math.min(1, Math.max(0, ratioData.ratio));
+    
+    // ─── 半圆仪表盘 ───
+    const startAngle = Math.PI;
+    const sweepAngle = Math.PI * ratio;
+    
+    // 背景弧
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI);
+    ctx.strokeStyle = '#2a2a3e';
+    ctx.lineWidth = 18;
+    ctx.stroke();
+    
+    // 胸腔端标签 (0%)
+    ctx.fillStyle = '#e94560';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('胸腔', cx - radius - 5, cy + 4);
+    
+    // 头腔端标签 (100%)
+    ctx.fillStyle = '#16c79a';
+    ctx.textAlign = 'right';
+    ctx.fillText('头腔', cx + radius + 5, cy + 4);
+    
+    // 进度弧
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * ratio);
+    
+    const grad = ctx.createLinearGradient(cx - radius, cy, cx + radius, cy);
+    grad.addColorStop(0, '#e94560');
+    grad.addColorStop(0.4, '#ffa502');
+    grad.addColorStop(0.6, '#00d9ff');
+    grad.addColorStop(1, '#16c79a');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 18;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    
+    // 圆点指示器
+    const indicatorAngle = Math.PI * ratio;
+    const ix = cx - radius * Math.cos(indicatorAngle);
+    const iy = cy - radius * Math.sin(indicatorAngle);
+    
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ix, iy, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = ratio > 0.5 ? '#16c79a' : '#e94560';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // ─── 中央数值 ───
+    const headPct = Math.round(ratioData.headPct);
+    const chestPct = Math.round(ratioData.chestPct);
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${headPct}%`, cx, cy - 6);
+    
+    ctx.fillStyle = '#a4b0be';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('头腔共鸣占比', cx, cy + 14);
+    
+    // ─── 状态文字 ───
+    let status, statusColor;
+    if (headPct < 30) {
+      status = '🔴 胸腔共鸣主导';
+      statusColor = '#e94560';
+    } else if (headPct < 45) {
+      status = '🟠 偏胸腔';
+      statusColor = '#ffa502';
+    } else if (headPct < 55) {
+      status = '🟡 均衡';
+      statusColor = '#ffd700';
+    } else if (headPct < 70) {
+      status = '🟢 偏头腔';
+      statusColor = '#00d9ff';
+    } else {
+      status = '💚 头腔共鸣主导 ✓';
+      statusColor = '#16c79a';
+    }
+    
+    ctx.fillStyle = statusColor;
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(status, cx, H - 12);
+    
+    // 底部小字：胸腔 vs 头腔
+    ctx.fillStyle = '#666';
+    ctx.font = '9px sans-serif';
+    ctx.fillText(`胸腔 ${chestPct}%`, cx - 40, H - 28);
+    ctx.fillText(`头腔 ${headPct}%`, cx + 40, H - 28);
+  }
+
+  /**
+   * 共鸣比趋势图
+   */
+  drawResonanceTrend(canvas, history) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const pad = { left: 30, right: 10, top: 20, bottom: 25 };
+    const pw = W - pad.left - pad.right;
+    const ph = H - pad.top - pad.bottom;
+    
+    ctx.clearRect(0, 0, W, H);
+    
+    if (!history || history.length < 2) {
+      ctx.fillStyle = '#a4b0be';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('继续练习以显示趋势', W / 2, H / 2);
+      return;
+    }
+    
+    // Extract ratio values (0-100%)
+    const values = history.map(h => h.headPct || h.ratio * 100);
+    
+    // Draw area
+    const yMin = 0, yMax = 100;
+    const yFromVal = (v) => pad.top + ((yMax - v) / (yMax - yMin)) * ph;
+    const step = pw / Math.max(1, values.length - 1);
+    
+    // Area fill
+    ctx.beginPath();
+    ctx.moveTo(pad.left, yFromVal(0));
+    values.forEach((v, i) => ctx.lineTo(pad.left + i * step, yFromVal(v)));
+    ctx.lineTo(pad.left + (values.length - 1) * step, yFromVal(0));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0, 217, 255, 0.1)';
+    ctx.fill();
+    
+    // Line
+    ctx.strokeStyle = '#00d9ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    values.forEach((v, i) => {
+      const x = pad.left + i * step;
+      const y = yFromVal(v);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    
+    // Reference line at 50%
+    const refY = yFromVal(50);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(pad.left, refY); ctx.lineTo(W - pad.right, refY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#666'; ctx.font = '8px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('50% 均衡线', pad.left + 2, refY - 3);
+    
+    // Y labels
+    ctx.fillStyle = '#666'; ctx.font = '8px sans-serif'; ctx.textAlign = 'right';
+    for (let pct = 0; pct <= 100; pct += 25) {
+      ctx.fillText(pct + '%', pad.left - 4, yFromVal(pct) + 3);
+    }
+    
+    // Last value label
+    const lastVal = values[values.length - 1];
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(`${Math.round(lastVal)}%`, W - pad.right, yFromVal(lastVal) - 6);
+  }
+}
+
 // Export for use in other modules
 window.Charts = Charts;

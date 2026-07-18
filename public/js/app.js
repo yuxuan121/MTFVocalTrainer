@@ -922,12 +922,31 @@ navigateTo(screen) {
         const avgFormants = this.formantAnalyzer.getAverageFormants(5);
         const stability = this.formantAnalyzer.getResonanceStability(10);
         const brightness = this.formantAnalyzer.getBrightnessRatio();
+        
+        // ─── 共鸣比分析（新增） ───
+        const resonanceRatio = this.formantAnalyzer.getResonanceRatio(audioData.timeDomainData);
 
         // Track resonance history for heatmap in test mode
         this.resonanceHistory.push({ f1: avgFormants.F1, f2: avgFormants.F2 });
         if (this.resonanceHistory.length > 80) this.resonanceHistory.shift();
         const hmCanvas = document.getElementById('resonanceHeatmapCanvas');
         if (hmCanvas) this.charts.drawResonanceHeatmap(hmCanvas, avgFormants.F1, avgFormants.F2, this.resonanceHistory);
+
+        // 绘制共鸣比仪表盘（新增）
+        const ratioGaugeCanvas = document.getElementById('resonanceRatioGaugeCanvas');
+        if (ratioGaugeCanvas) this.charts.drawResonanceRatioGauge(ratioGaugeCanvas, resonanceRatio);
+        const ratioTrendCanvas = document.getElementById('resonanceRatioTrendCanvas');
+        if (ratioTrendCanvas) {
+          const history = this.formantAnalyzer.getResonanceRatioHistory(50);
+          this.charts.drawResonanceTrend(ratioTrendCanvas, history);
+        }
+
+        // 共鸣比百分比显示
+        if (resonanceRatio) {
+          document.getElementById('resonanceRatioDisplay').textContent = `${resonanceRatio.headPct.toFixed(0)}%`;
+          document.getElementById('resonanceRatioLabel').textContent = resonanceRatio.headDominant ? '头腔共鸣 ✅' : '胸腔共鸣 🔴';
+          document.getElementById('resonanceRatioLabel').style.color = resonanceRatio.headDominant ? '#16c79a' : '#e94560';
+        }
 
         // Update UI (test mode)
         document.getElementById('f1Display').textContent = `${avgFormants.F1.toFixed(0)} Hz`;
@@ -1109,6 +1128,9 @@ navigateTo(screen) {
         const avgFormants = this.formantAnalyzer.getAverageFormants(5);
         const stability = this.formantAnalyzer.getResonanceStability(10);
         const brightness = this.formantAnalyzer.getBrightnessRatio();
+        
+        // ─── 共鸣比分析（新增） ───
+        const resonanceRatio = this.formantAnalyzer.getResonanceRatio(audioData.timeDomainData);
 
         // Track resonance history for heatmap (keep last 80 points)
         this.resonanceHistory.push({ f1: avgFormants.F1, f2: avgFormants.F2 });
@@ -1120,10 +1142,30 @@ navigateTo(screen) {
           this.charts.drawResonanceHeatmap(heatmapCanvas, avgFormants.F1, avgFormants.F2, this.resonanceHistory);
         }
 
+        // 绘制共鸣比仪表盘（新增）
+        const ratioGaugeCanvas = document.getElementById('resonanceRatioGaugeCanvas');
+        if (ratioGaugeCanvas) {
+          this.charts.drawResonanceRatioGauge(ratioGaugeCanvas, resonanceRatio);
+        }
+        
+        // 绘制共鸣比趋势图（新增）
+        const ratioTrendCanvas = document.getElementById('resonanceRatioTrendCanvas');
+        if (ratioTrendCanvas) {
+          const history = this.formantAnalyzer.getResonanceRatioHistory(50);
+          this.charts.drawResonanceTrend(ratioTrendCanvas, history);
+        }
+
         // Update UI
         document.getElementById('f1Display').textContent = `${avgFormants.F1.toFixed(0)} Hz`;
         document.getElementById('f2Display').textContent = `${avgFormants.F2.toFixed(0)} Hz`;
         document.getElementById('brightnessDisplay').textContent = brightness ? brightness.toFixed(2) : '--';
+
+        // 共鸣比百分比显示
+        if (resonanceRatio) {
+          document.getElementById('resonanceRatioDisplay').textContent = `${resonanceRatio.headPct.toFixed(0)}%`;
+          document.getElementById('resonanceRatioLabel').textContent = resonanceRatio.headDominant ? '头腔共鸣 ✅' : '胸腔共鸣 🔴';
+          document.getElementById('resonanceRatioLabel').style.color = resonanceRatio.headDominant ? '#16c79a' : '#e94560';
+        }
 
         // Color code the stability based on thresholds
         const stabilityEl = document.getElementById('resonanceStability');
@@ -1141,6 +1183,8 @@ navigateTo(screen) {
       } else {
         document.getElementById('resonanceStability').textContent = 'No sound detected';
         document.getElementById('resonanceStability').style.color = '#a4b0be';
+        document.getElementById('resonanceRatioDisplay').textContent = '--';
+        document.getElementById('resonanceRatioLabel').textContent = '等待声音...';
       }
     });
   }
