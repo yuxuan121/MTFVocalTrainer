@@ -80,6 +80,29 @@ class Storage {
           sessions: [],
           pitchHistory: [],
           resonanceHistory: []
+        },
+        coachMemory: {
+          detailedSessions: [],
+          weaknessProfile: {
+            pitchDropRate: 0,
+            resonanceDominance: 'unknown',
+            stabilityIssue: false,
+            transitionWeakness: [],
+            lastAnalysis: null
+          },
+          trend: {
+            direction: 'newcomer',
+            pitchTrend: [],
+            resonanceTrend: [],
+            streakNote: ''
+          },
+          todayRecommendation: {
+            focus: 'pitch',
+            warmup: '先做2分钟腹式呼吸放松',
+            exercise: '从音高锚定练习开始',
+            goal: '完成一次30秒测试模式',
+            generatedAt: null
+          }
         }
       };
       this.saveData(defaultData);
@@ -297,6 +320,54 @@ class Storage {
     if (level < 5 && st.levelStats[level].completed >= 3) {
       st.currentLevel = Math.max(st.currentLevel, level + 1);
     }
+    this.saveData(data);
+  }
+
+  // ─── 专属教练记忆系统 ───
+
+  getCoachMemory() {
+    return this.getData().coachMemory;
+  }
+
+  saveCoachMemory(updates) {
+    const data = this.getData();
+    data.coachMemory = { ...data.coachMemory, ...updates };
+    this.saveData(data);
+  }
+
+  addDetailedSession(session) {
+    const data = this.getData();
+    data.coachMemory.detailedSessions.push({
+      timestamp: new Date().toISOString(),
+      ...session
+    });
+    // Keep only last 200 sessions
+    if (data.coachMemory.detailedSessions.length > 200) {
+      data.coachMemory.detailedSessions.shift();
+    }
+    this.saveData(data);
+  }
+
+  getDetailedSessions(count = 30) {
+    const data = this.getData();
+    return data.coachMemory.detailedSessions.slice(-count);
+  }
+
+  updateWeaknessProfile(updates) {
+    const data = this.getData();
+    data.coachMemory.weaknessProfile = { ...data.coachMemory.weaknessProfile, ...updates };
+    this.saveData(data);
+  }
+
+  updateTrend(updates) {
+    const data = this.getData();
+    data.coachMemory.trend = { ...data.coachMemory.trend, ...updates };
+    this.saveData(data);
+  }
+
+  updateTodayRecommendation(rec) {
+    const data = this.getData();
+    data.coachMemory.todayRecommendation = rec;
     this.saveData(data);
   }
 

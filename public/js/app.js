@@ -21,6 +21,7 @@ class VoiceTrainerApp {
     this._convMode = 'd1';    // 'd1'|'d2'|'d3'|'free'
     this.coachStrategy = new CoachStrategy();
     this.doubaoAPI = new DoubaoAPI();
+    this.personalCoach = new PersonalCoach(this.storage, this.doubaoAPI);
     this._freeChatMsgs = [];  // 自由对话消息缓存
 
     // Exercise state
@@ -211,6 +212,8 @@ navigateTo(screen) {
         this.renderSection6();
       } else if (screen === 'section7') {
         this.renderSection7();
+      } else if (screen === 'coach') {
+        this.renderCoach();
       }
       // Resume audio context if needed
       this.audioManager.resume();
@@ -2357,6 +2360,168 @@ navigateTo(screen) {
     this.selectedVoiceStyle = 'xiaoxiao';
     this._renderStudioList();
     this._updateStudioProgress();
+  }
+
+  // ─── 专属教练渲染 ───
+
+  renderCoach() {
+    const memory = this.storage.getCoachMemory();
+    const coach = this.personalCoach;
+    
+    // 1. 总评分仪表
+    const score = coach.getOverallScore();
+    const stage = coach.getStageLabel(score);
+    const scoreCanvas = document.getElementById('coachScoreGaugeCanvas');
+    if (scoreCanvas) this.charts.drawFeminizationGauge(scoreCanvas, score, '嗓音综合评分');
+    const stageLabel = document.getElementById('coachStageLabel');
+    if (stageLabel) {
+      stageLabel.textContent = `${stage.icon} ${stage.label}`;
+      stageLabel.style.color = stage.color;
+    }
+    
+    // 2. 今日推荐
+    const rec = memory.todayRecommendation;
+    const focusMap = { pitch: '🎯 音高训练', resonance: '🔮 共鸣训练', stability: '📊 稳定性训练', mixed: '🔄 综合训练' };
+    document.getElementById('todayFocus').textContent = `重点：${focusMap[rec.focus] || '综合训练'}`;
+    document.getElementById('todayWarmup').textContent = `🧘 热身：${rec.warmup}`;
+    document.getElementById('todayExercise').textContent = `🏋️ 训练：${rec.exercise}`;
+    document.getElementById('todayGoal').textContent = `🎯 目标：${rec.goal}`;
+    const encouragementEl = document.getElementById('todayEncouragement');
+    if (encouragementEl) {
+      encouragementEl.textContent = rec.encouragement || '坚持练习，循序渐进！';
+    }
+    
+    // 3. 薄弱点
+    const profile = memory.weaknessProfile;
+    const weaknessList = document.getElementById('weaknessList');
+    if (weaknessList) {
+      const weaknesses = [];
+      if (profile.resonanceDominance === 'chest') weaknesses.push('🔴 共鸣偏胸腔，需要加强头腔共鸣训练');
+      else if (profile.resonanceDominance === 'head') weaknesses.push('🟢 头腔共鸣良好');
+      if (profile.pitchDropRate > 0.3) weaknesses.push('⚠️ 音高偏低较频繁（' + Math.round(profile.pitchDropRate * 100) + '%）');
+      if (profile.stabilityIssue) weaknesses.push('⚠️ 稳定性不足');
+      if (profile.transitionWeakness.length > 0) {
+        profile.transitionWeakness.forEach(t => weaknesses.push('🔸 过渡薄弱：' + t));
+      }
+      if (weaknesses.length === 0) {
+        weaknessList.innerHTML = '<p style="color: #16c79a;">✅ 暂无明显薄弱点，继续保持！</p>';
+      } else {
+        weaknessList.innerHTML = weaknesses.map(w => '<div style="padding: 4px 0;">' + w + '</div>').join('');
+      }
+    }
+    
+    // 4. 趋势图
+    const trendCanvas = document.getElementById('coachTrendCanvas');
+    if (trendCanvas) {
+      const trend = memory.trend;
+      const combined = [];
+      // 合并音高和共鸣趋势
+      const pitchPoints = trend.pitchTrend.slice(-15);
+      const resonancePoints = trend.resonanceTrend.slice(-15);
+      const maxLen = Math.max(pitchPoints.length, resonancePoints.length);
+      for (let i = 0; i < maxLen; i++) {
+        const p = pitchPoints[i] ? pitchPoints[i].value : null;
+        const r = resonancePoints[i] ? resonancePoints[i].pct : null;
+        combined.push({ pitch: p, resonance: r });
+      }
+      if (combined.length > 1) {
+        this.drawCoachTrend(trendCanvas, combined);
+      } else {
+        const ctx = trendCanvas.getContext('2d');
+        ctx.clearRect(0, 0, trendCanvas.width, trendCanvas.height);
+        ctx.fillStyle = '#a4b0be'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('继续练习以显示趋势', trendCanvas.width/2, trendCanvas.height/2);
+      }
+    }
+    
+    // 5. 近期练习
+    const sessions = this.storage.getDetailedSessions(10);
+    const listEl = document.getElementById('recentSessionsList');
+    if (listEl) {
+      if (sessions.length === 0) {
+        listEl.innerHTML = '<p style="color: #666;">还没有练习记录，开始训练吧！</p>';
+      } else {
+        const typeMap = { pitch: '🎯 音高', resonance: '🔮 共鸣', word: '📖 词语', song: '🎵 歌曲', conversation: '💬 对话' };
+        listEl.innerHTML = sessions.reverse().map(s => {
+          const date = new Date(s.timestamp).toLocaleDateString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+          const type = typeMap[s.type] || s.type;
+          const scoreStr = s.score != null ? ` | 得分 ${s.score}` : '';
+          const passedStr = s.passed ? ' ✅' : '';
+          return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2a3e;">
+            <span>${date} ${type}${passedStr}</span>
+            <span style="color:#a4b0be;">${s.duration ? Math.round(s.duration) + 's' : ''}${scoreStr}</span>
+          </div>`;
+        }).join('');
+      }
+    }
+  }
+
+  drawCoachTrend(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const pad = { left: 35, right: 10, top: 15, bottom: 20 };
+    const pw = W - pad.left - pad.right;
+    const ph = H - pad.top - pad.bottom;
+    
+    ctx.clearRect(0, 0, W, H);
+    
+    // Find max values for scaling
+    let maxVal = 0;
+    data.forEach(d => { if (d.pitch && d.pitch > maxVal) maxVal = d.pitch; if (d.resonance && d.resonance > maxVal) maxVal = d.resonance; });
+    maxVal = Math.max(maxVal, 100);
+    
+    const yFromVal = (v) => pad.top + ((maxVal - v) / maxVal) * ph;
+    const step = pw / Math.max(1, data.length - 1);
+    
+    // Grid lines
+    ctx.strokeStyle = '#2a2a3e'; ctx.lineWidth = 0.5;
+    for (let pct = 0; pct <= 100; pct += 25) {
+      const y = yFromVal(pct);
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+      ctx.fillStyle = '#666'; ctx.font = '8px sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText(pct, pad.left - 4, y + 3);
+    }
+    
+    // Pitch line (blue)
+    const hasPitch = data.some(d => d.pitch != null);
+    if (hasPitch) {
+      ctx.strokeStyle = '#00d9ff'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      data.forEach((d, i) => {
+        if (d.pitch == null) return;
+        const x = pad.left + i * step;
+        const y = yFromVal(d.pitch);
+        if (i === 0 || data[i-1].pitch == null) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillStyle = '#00d9ff'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('音高(Hz)', pad.left, pad.top - 3);
+    }
+    
+    // Resonance line (green)
+    const hasRes = data.some(d => d.resonance != null);
+    if (hasRes) {
+      ctx.strokeStyle = '#16c79a'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      data.forEach((d, i) => {
+        if (d.resonance == null) return;
+        const x = pad.left + i * step;
+        const y = yFromVal(d.resonance);
+        if (i === 0 || data[i-1].resonance == null) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#16c79a'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText('共鸣比%', W - pad.right, pad.top - 3);
+    }
+    
+    // Reference line for 50% resonance
+    const refY = yFromVal(50);
+    ctx.strokeStyle = 'rgba(22,199,154,0.2)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(pad.left, refY); ctx.lineTo(W - pad.right, refY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#555'; ctx.font = '7px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('50% 均衡线', pad.left + 2, refY - 2);
   }
 
   _renderStudioList() {

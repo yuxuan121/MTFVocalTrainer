@@ -113,6 +113,9 @@
         <button class="btn btn-outline" onclick="app.navigateTo('progress')">
           📊 进度
         </button>
+        <button class="btn btn-outline" onclick="app.navigateTo('coach')" style="background: linear-gradient(135deg, #e94560, #16c79a); color: #fff; border: none;">
+          🧠 专属教练
+        </button>
         <button class="btn btn-outline" onclick="app.navigateTo('settings')">
           ⚙️ 设置
         </button>
@@ -636,6 +639,54 @@
       </div>
     </div>
 
+    <!-- 🧠 专属教练 Screen -->
+    <div id="coachScreen" class="screen">
+      <div class="screen-header">
+        <button class="btn-back" onclick="app.navigateTo('home')">← 返回</button>
+        <h2>🧠 专属教练</h2>
+      </div>
+
+      <div class="exercise-container">
+        <!-- 顶部总评分 + 阶段 -->
+        <div id="coachOverallSection" style="text-align: center; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 12px;">
+          <canvas id="coachScoreGaugeCanvas" width="200" height="160" style="margin: 0 auto;"></canvas>
+          <div id="coachStageLabel" style="font-size: 16px; font-weight: bold; margin-top: 4px;"></div>
+        </div>
+
+        <!-- 今日推荐 -->
+        <div style="background: rgba(0, 217, 255, 0.08); border-left: 3px solid #00d9ff; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+          <h4 style="margin: 0 0 8px 0; color: #00d9ff;">📋 今日训练推荐</h4>
+          <div id="todayFocus" style="font-weight: bold; font-size: 14px; color: #ffa502;"></div>
+          <div id="todayWarmup" style="margin-top: 6px; font-size: 13px;">🧘 热身：</div>
+          <div id="todayExercise" style="margin-top: 4px; font-size: 13px;">🏋️ 训练：</div>
+          <div id="todayGoal" style="margin-top: 4px; font-size: 13px;">🎯 目标：</div>
+          <div id="todayEncouragement" style="margin-top: 8px; font-size: 14px; font-weight: bold;"></div>
+        </div>
+
+        <!-- 薄弱点分析 -->
+        <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+          <h4 style="margin: 0 0 8px 0; color: #e94560;">🔍 薄弱点识别</h4>
+          <div id="weaknessList" style="font-size: 13px;">加载中...</div>
+        </div>
+
+        <!-- 趋势图 -->
+        <div style="margin-bottom: 12px;">
+          <h4 style="margin: 0 0 8px 0; text-align: center; color: #a4b0be;">📈 进步趋势</h4>
+          <canvas id="coachTrendCanvas" width="360" height="160" style="margin: 0 auto; display: block;"></canvas>
+        </div>
+
+        <!-- 近期练习记录 -->
+        <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+          <h4 style="margin: 0 0 8px 0; color: #a4b0be;">📝 近期练习</h4>
+          <div id="recentSessionsList" style="font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 16px;">
+          <button class="btn btn-outline" onclick="app.renderCoach()">🔄 刷新分析</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 设置 Screen -->
     <div id="settingsScreen" class="screen">
       <div class="screen-header">
@@ -755,6 +806,7 @@
   <script src="js/coach-strategy.js"></script>
   <script src="js/doubao-config.js"></script>
   <script src="js/doubao-api.js"></script>
+  <script src="js/personal-coach.js"></script>
   <script src="js/app.js"></script>
 
   <script>
