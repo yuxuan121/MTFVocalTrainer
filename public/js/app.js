@@ -488,6 +488,16 @@ navigateTo(screen) {
     // Add practice time
     this.storage.addDailyPracticeTime(duration / 60);
 
+    // ─── 记录到教练记忆 ───
+    const passedPitch = avgStdDev < 10;
+    this.personalCoach.recordSession({
+      type: 'pitch', duration, score,
+      passed: passedPitch,
+      avgPitch, targetPitch: settings.targetFrequency,
+      pitchStdDev: avgStdDev,
+      resonanceRatio: this.formantAnalyzer.getAverageResonanceRatio()?.ratio || null
+    });
+
     // Show results
     const resultsSection = document.getElementById('pitchResultsSection');
     const resultsContent = document.getElementById('pitchResultsContent');
@@ -1075,6 +1085,19 @@ navigateTo(screen) {
     // Add practice time
     this.storage.addDailyPracticeTime(duration / 60);
 
+    // ─── 记录到教练记忆 ───
+    const passedRes = avgStability < 10;
+    const pitches = this.exerciseData.map(d => d.pitch).filter(p => p > 0);
+    const avgPitchRes = pitches.length > 0 ? pitches.reduce((a,b) => a+b, 0) / pitches.length : null;
+    this.personalCoach.recordSession({
+      type: 'resonance', duration, score,
+      passed: passedRes,
+      avgStability,
+      resonanceRatio: this.formantAnalyzer.getAverageResonanceRatio()?.ratio || null,
+      avgPitch: avgPitchRes,
+      pitchStdDev: this.pitchDetector ? this.pitchDetector.getStandardDeviation(10) : null
+    });
+
     // Show results
     const resultsSection = document.getElementById('resonanceResultsSection');
     const resultsContent = document.getElementById('resonanceResultsContent');
@@ -1206,6 +1229,18 @@ navigateTo(screen) {
     document.getElementById('brightnessDisplay').textContent = '--';
     document.getElementById('resonanceStability').textContent = '-- %';
     document.getElementById('resonanceStability').style.color = '';
+
+    // ─── 记录到教练记忆（练习模式） ───
+    const avgStability = this.formantAnalyzer.getResonanceStability(10);
+    const brightness = this.formantAnalyzer.getBrightnessRatio();
+    const resRatio = this.formantAnalyzer.getAverageResonanceRatio(10);
+    this.personalCoach.recordSession({
+      type: 'resonance', duration: (Date.now() - this.exerciseStartTime) / 1000,
+      passed: false, score: 0,
+      avgStability,
+      brightnessRatio: brightness,
+      resonanceRatio: resRatio?.ratio || null
+    });
   }
 
   // Section 4: Word Practice

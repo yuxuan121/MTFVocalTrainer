@@ -10,3 +10,4 @@ public/js/doubao-config.js
 android/app/src/main/assets/js/doubao-config.js
 .vscode/
 .idea/
+".github/workflows/"  
